@@ -1,0 +1,12 @@
+##  SORTING AND SEARCHING ###############################################################################
+
+--> worst way to sort elemennts in given array.
+    ANS: first find all the permutation of the array and in which one permutation will be answer.
+         complexity: O(N x N!)
+
+--> what is good algorithm? ANS: 1. less space 2.good running time
+
+1. Insertion Sort:
+    divide the array which is given into 2 parts 1 is sortable and 2nd is non sortable . then pick one element 
+    from non-sortable part and put it into  sortable part at right position until all the elemnts from non-sortable 
+    part has not been covered.
