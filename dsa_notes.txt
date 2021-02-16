@@ -10,3 +10,6 @@
     divide the array which is given into 2 parts 1 is sortable and 2nd is non sortable . then pick one element 
     from non-sortable part and put it into  sortable part at right position until all the elemnts from non-sortable 
     part has not been covered.
+
+    application: 1. when you have almost sorted array insertion sort would be very handy.
+                 2. in online queries. ex. when new element is come it will put at right position
