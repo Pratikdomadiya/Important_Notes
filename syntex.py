@@ -7,3 +7,11 @@ temp=(set(t1).intersection(t2))# return common elements in two different list
 
 #sieve method for finding the prime number is efficient among all-->> go geeksforgeek.com
 
+#taking input in coding python
+1. effective way (almost 10 time faster than "normak way" to get input of large amount of data)
+    for _  in range(int(sys.stdin.readline())):
+        x,y=map(int,sys.stdin.readline().split())
+2. normal way
+    for _ in range(int(input())):
+        x,y=map(int,input().split())    
+                
