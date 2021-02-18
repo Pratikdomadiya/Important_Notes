@@ -89,6 +89,7 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 1. Vectors
     A vector is simply a list of items that are of the same type.
     To combine the list of items to a vector, use the c() function and separate the items by a comma.
+    function c(), which stands for concatenate, is useful for creating vectors.
     To find out how many items a vector has, use the length() function:
     To sort items in a vector alphabetically or numerically, use the sort() function:
     You can access the vector items by referring to its index number inside brackets []. 
