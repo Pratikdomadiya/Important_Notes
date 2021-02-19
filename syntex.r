@@ -173,3 +173,6 @@ z <- c(TRUE, TRUE, FALSE)
 any(z)#it returns "true" if at least one value in z is TRUE
 all(z)#it returns "true" if all the values in z is TRUE
 
+# we see that the avg function and the pre-built R mean() function are identical or not
+x <- 1:100
+identical(mean(x), avg(x))#returns true if identical otherwise false
