@@ -15,3 +15,7 @@ temp=(set(t1).intersection(t2))# return common elements in two different list
     for _ in range(int(input())):
         x,y=map(int,input().split())    
                 
+
+#to find out time taken by perticular operation using python magic functions
+    %%timeit -n 10# note write in single block only
+    
