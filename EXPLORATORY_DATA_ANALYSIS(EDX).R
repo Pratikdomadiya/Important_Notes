@@ -357,3 +357,584 @@ p3 <- p + geom_histogram(binwidth = 3, fill = "blue", col = "black")
 # arrange plots next to each other in 1 row, 3 columns
 library(gridExtra)
 grid.arrange(p1, p2, p3, ncol = 3)
+
+# summarize() from the dplyr/tidyverse package computes summary statistics from the data frame. It returns a data frame whose column names are defined within the function call.
+# summarize() can compute any summary function that operates on vectors and returns a single value, but it cannot operate on functions that return multiple values.
+# Like most dplyr functions, summarize() is aware of variable names within data frames and can use them directly.
+library(tidyverse)
+library(dslabs)
+data(heights)
+
+# compute average and standard deviation for males
+s <- heights %>%
+  filter(sex == "Male") %>%
+  summarize(average = mean(height), standard_deviation = sd(height))
+
+# access average and standard deviation from summary table
+s$average
+s$standard_deviation
+
+# compute median, min and max
+heights %>%
+  filter(sex == "Male") %>%
+  summarize(median = median(height),
+            minimum = min(height),
+            maximum = max(height))
+# alternative way to get min, median, max in base R
+quantile(heights$height, c(0, 0.5, 1))
+
+# NOTE: The following code will NOT generate an error if using dplyr 1.0 or later
+
+# generates an error: summarize can only take functions that return a single value
+heights %>%
+  filter(sex == "Male") %>%
+  summarize(range = quantile(height, c(0, 0.5, 1)))
+# The dot operator allows you to access values stored in data that is being piped in using the %>% character. The dot is a placeholder for the data being passed in through the pipe.
+# The dot operator allows dplyr functions to return single vectors or numbers instead of only data frames.
+# us_murder_rate %>% .$rate is equivalent to us_murder_rate$rate.
+# Note that an equivalent way to extract a single column using the pipe is us_murder_rate %>% pull(rate). The pull() function will be used in later course material.
+library(tidyverse)
+library(dslabs)
+data(murders)
+
+murders <- murders %>% mutate(murder_rate = total/population*100000)
+summarize(murders, mean(murder_rate))
+
+# calculate US murder rate, generating a data frame
+us_murder_rate <- murders %>%
+  summarize(rate = sum(total) / sum(population) * 100000)
+us_murder_rate
+
+# extract the numeric US murder rate with the dot operator
+us_murder_rate %>% .$rate
+
+# calculate and extract the murder rate with one pipe
+us_murder_rate <- murders %>%
+  summarize(rate = sum(total) / sum(population) * 100000) %>%
+  .$rate
+# The group_by() function from dplyr  converts a data frame to a grouped data frame, creating groups using one or more variables.
+# summarize() and some other dplyr functions will behave differently on grouped data frames.
+# Using summarize() on a grouped data frame computes the summary statistics for each of the separate groups.
+library(tidyverse)
+library(dslabs)
+data(heights)
+data(murders)
+
+# compute separate average and standard deviation for male/female heights
+heights %>%
+  group_by(sex) %>%
+  summarize(average = mean(height), standard_deviation = sd(height))
+
+# compute median murder rate in 4 regions of country
+murders <- murders %>%
+  mutate(murder_rate = total/population * 100000)
+murders %>%
+  group_by(region) %>%
+  summarize(median_rate = median(murder_rate))
+
+# The arrange() function from dplyr sorts a data frame by a given column.
+# By default, arrange() sorts in ascending order (lowest to highest). To instead sort in descending order, use the function desc() inside of arrange().
+# You can arrange() by multiple levels: within equivalent values of the first level, observations are sorted by the second level, and so on.
+# The top_n() function shows the top results ranked by a given variable, but the results are not ordered. You can combine top_n() with arrange() to return the top results in order.
+# NOTE: The top_n() function has been superseded in favour of slice_min()/slice_max() since the making of this video. The notes in the corresponding code explain how to use this code in place of top_n()
+# libraries and data
+library(tidyverse)
+library(dslabs)
+data(murders)
+
+# set up murders object
+murders <- murders %>%
+  mutate(murder_rate = total/population * 100000)
+
+# arrange by population column, smallest to largest
+murders %>% arrange(population) %>% head()
+
+# arrange by murder rate, smallest to largest
+murders %>% arrange(murder_rate) %>% head()
+
+# arrange by murder rate in descending order
+murders %>% arrange(desc(murder_rate)) %>% head()
+
+# arrange by region alphabetically, then by murder rate within each region
+murders %>% arrange(region, murder_rate) %>% head()
+
+# show the top 10 states with highest murder rate, not ordered by rate
+murders %>% top_n(10, murder_rate)
+
+# show the top 10 states with highest murder rate, ordered by rate
+murders %>% arrange(desc(murder_rate)) %>% top_n(10)
+
+# alternatively, can use the slice_max function
+murders %>% slice_max(murder_rate, n = 10)
+
+################################# gapminder data analysis ######################
+
+# load and inspect gapminder data
+library(dslabs)
+data(gapminder)
+head(gapminder)
+
+# compare infant mortality in Sri Lanka and Turkey
+gapminder %>%
+  filter(year == 2015 & country %in% c("Sri Lanka", "Turkey")) %>%
+  select(country, infant_mortality)
+
+# basic scatterplot of life expectancy versus fertility
+ds_theme_set()    # set plot theme
+filter(gapminder, year == 1962) %>%
+  ggplot(aes(fertility, life_expectancy)) +
+  geom_point()
+
+# add color as continent
+filter(gapminder, year == 1962) %>%
+  ggplot(aes(fertility, life_expectancy, color = continent)) +
+  geom_point()
+# Faceting makes multiple side-by-side plots stratified by some variable. This is a way to ease comparisons.
+# The facet_grid() function allows faceting by up to two variables, with rows faceted by one variable and columns faceted by the other variable. To facet by only one variable, use the dot operator as the other variable.
+# The facet_wrap() function facets by one variable and automatically wraps the series of plots so they have readable dimensions.
+# Faceting keeps the axes fixed across all plots, easing comparisons between plots.
+# The data suggest that the developing versus Western world view no longer makes sense in 2012.
+# facet by continent and year
+filter(gapminder, year %in% c(1962, 2012)) %>%
+  ggplot(aes(fertility, life_expectancy, col = continent)) +
+  geom_point() +
+  facet_grid(continent ~ year)
+
+# facet by year only
+filter(gapminder, year %in% c(1962, 2012)) %>%
+  ggplot(aes(fertility, life_expectancy, col = continent)) +
+  geom_point() +
+  facet_grid(. ~ year)
+
+# facet by year, plots wrapped onto multiple rows
+years <- c(1962, 1980, 1990, 2000, 2012)
+continents <- c("Europe", "Asia")
+gapminder %>%
+  filter(year %in% years & continent %in% continents) %>%
+  ggplot(aes(fertility, life_expectancy, col = continent)) +
+  geom_point() +
+  facet_wrap(~year)
+
+# Time series plots have time on the x-axis and a variable of interest on the y-axis.
+# The geom_line() geometry connects adjacent data points to form a continuous line. A line plot is appropriate when points are regularly spaced, densely packed and from a single data series.
+# You can plot multiple lines on the same graph. Remember to group or color by a variable so that the lines are plotted independently.
+# Labeling is usually preferred over legends. However, legends are easier to make and appear by default. Add a label with geom_text(), specifying the coordinates where the label should appear on the graph.
+#Code: Single time series
+# scatterplot of US fertility by year
+gapminder %>%
+  filter(country == "United States") %>%
+  ggplot(aes(year, fertility)) +
+  geom_point()
+
+# line plot of US fertility by year
+gapminder %>%
+  filter(country == "United States") %>%
+  ggplot(aes(year, fertility)) +
+  geom_line()
+#Code: Multiple time series
+# line plot fertility time series for two countries- only one line (incorrect)
+countries <- c("South Korea", "Germany")
+gapminder %>% filter(country %in% countries) %>%
+  ggplot(aes(year, fertility)) +
+  geom_line()
+
+# line plot fertility time series for two countries - one line per country
+gapminder %>% filter(country %in% countries) %>%
+  ggplot(aes(year, fertility, group = country)) +
+  geom_line()
+
+# fertility time series for two countries - lines colored by country
+gapminder %>% filter(country %in% countries) %>%
+  ggplot(aes(year, fertility, col = country)) +
+  geom_line()
+#Code: Adding text labels to a plot
+# life expectancy time series - lines colored by country and labeled, no legend
+labels <- data.frame(country = countries, x = c(1975, 1965), y = c(60, 72))
+gapminder %>% filter(country %in% countries) %>%
+  ggplot(aes(year, life_expectancy, col = country)) +
+  geom_line() +
+  geom_text(data = labels, aes(x, y, label = country), size = 5) +
+  theme(legend.position = "none")
+
+# We use GDP data to compute income in US dollars per day, adjusted for inflation.
+# Log transformations convert multiplicative changes into additive changes.
+# Common transformations are the log base 2 transformation and the log base 10 transformation. The choice of base depends on the range of the data. The natural log is not recommended for visualization because it is difficult to interpret.
+# The mode of a distribution is the value with the highest frequency. The mode of a normal distribution is the average. A distribution can have multiple local modes.
+# There are two ways to use log transformations in plots: transform the data before plotting or transform the axes of the plot. Log scales have the advantage of showing the original values as axis labels, while log transformed values ease interpretation of intermediate values between labels.
+# Scale the x-axis using scale_x_continuous() or scale_x_log10() layers in ggplot2. Similar functions exist for the y-axis.
+# In 1970, income distribution is bimodal, consistent with the dichotomous Western versus developing worldview.
+# Note: in the video, when the unknown value on the log scale is stated to be equal to 10^1.5, it should actually be 10^0.5
+# add dollars per day variable
+gapminder <- gapminder %>%
+  mutate(dollars_per_day = gdp/population/365)
+
+# histogram of dollars per day
+past_year <- 1970
+gapminder %>%
+  filter(year == past_year & !is.na(gdp)) %>%
+  ggplot(aes(dollars_per_day)) +
+  geom_histogram(binwidth = 1, color = "black")
+
+# repeat histogram with log2 scaled data
+gapminder %>%
+  filter(year == past_year & !is.na(gdp)) %>%
+  ggplot(aes(log2(dollars_per_day))) +
+  geom_histogram(binwidth = 1, color = "black")
+
+# repeat histogram with log2 scaled x-axis
+gapminder %>%
+  filter(year == past_year & !is.na(gdp)) %>%
+  ggplot(aes(dollars_per_day)) +
+  geom_histogram(binwidth = 1, color = "black") +
+  scale_x_continuous(trans = "log2")
+# Make boxplots stratified by a categorical variable using the geom_boxplot() geometry.
+# Rotate axis labels by changing the theme through element_text(). You can change the angle and justification of the text labels.
+# Consider ordering your factors by a meaningful value with the reorder() function, which changes the order of factor levels based on a related numeric vector. This is a way to ease comparisons.
+# Show the data by adding data points to the boxplot with a geom_point() layer. This adds information beyond the five-number summary to your plot, but too many data points it can obfuscate your message.
+# add dollars per day variable
+gapminder <- gapminder %>%
+  mutate(dollars_per_day = gdp/population/365)
+
+# number of regions
+length(levels(gapminder$region))
+
+# boxplot of GDP by region in 1970
+past_year <- 1970
+p <- gapminder %>%
+  filter(year == past_year & !is.na(gdp)) %>%
+  ggplot(aes(region, dollars_per_day))
+p + geom_boxplot()
+
+# rotate names on x-axis
+p + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+#Code: The reorder function
+# by default, factor order is alphabetical
+fac <- factor(c("Asia", "Asia", "West", "West", "West"))
+levels(fac)
+
+# reorder factor by the category means
+value <- c(10, 11, 12, 6, 4)
+fac <- reorder(fac, value, FUN = mean)
+levels(fac)
+
+#Code: Enhanced boxplot ordered by median income, scaled, and showing data
+# reorder by median income and color by continent
+p <- gapminder %>%
+  filter(year == past_year & !is.na(gdp)) %>%
+  mutate(region = reorder(region, dollars_per_day, FUN = median)) %>%    # reorder
+  ggplot(aes(region, dollars_per_day, fill = continent)) +    # color by continent
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  xlab("")
+p
+
+# log2 scale y-axis
+p + scale_y_continuous(trans = "log2")
+
+# add data points
+p + scale_y_continuous(trans = "log2") + geom_point(show.legend = FALSE)
+
+# Use intersect() to find the overlap between two vectors.
+# To make boxplots where grouped variables are adjacaent, color the boxplot by a factor instead of faceting by that factor. This is a way to ease comparisons.
+# The data suggest that the income gap between rich and poor countries has narrowed, not expanded.
+#Code: Histogram of income in West versus developing world, 1970 and 2010
+# add dollars per day variable and define past year
+gapminder <- gapminder %>%
+  mutate(dollars_per_day = gdp/population/365)
+past_year <- 1970
+
+# define Western countries
+west <- c("Western Europe", "Northern Europe", "Southern Europe", "Northern America", "Australia and New Zealand")
+
+# facet by West vs devloping
+gapminder %>%
+  filter(year == past_year & !is.na(gdp)) %>%
+  mutate(group = ifelse(region %in% west, "West", "Developing")) %>%
+  ggplot(aes(dollars_per_day)) +
+  geom_histogram(binwidth = 1, color = "black") +
+  scale_x_continuous(trans = "log2") +
+  facet_grid(. ~ group)
+
+# facet by West/developing and year
+present_year <- 2010
+gapminder %>%
+  filter(year %in% c(past_year, present_year) & !is.na(gdp)) %>%
+  mutate(group = ifelse(region %in% west, "West", "Developing")) %>%
+  ggplot(aes(dollars_per_day)) +
+  geom_histogram(binwidth = 1, color = "black") +
+  scale_x_continuous(trans = "log2") +
+  facet_grid(year ~ group)
+#
+#Code: Income distribution of West versus developing world, only countries with data 
+# define countries that have data available in both years
+country_list_1 <- gapminder %>%
+  filter(year == past_year & !is.na(dollars_per_day)) %>% .$country
+country_list_2 <- gapminder %>%
+  filter(year == present_year & !is.na(dollars_per_day)) %>% .$country
+country_list <- intersect(country_list_1, country_list_2)
+
+# make histogram including only countries with data available in both years
+gapminder %>%
+  filter(year %in% c(past_year, present_year) & country %in% country_list) %>%    # keep only selected countries
+  mutate(group = ifelse(region %in% west, "West", "Developing")) %>%
+  ggplot(aes(dollars_per_day)) +
+  geom_histogram(binwidth = 1, color = "black") +
+  scale_x_continuous(trans = "log2") +
+  facet_grid(year ~ group)
+
+#Code: Boxplots of income in West versus developing world, 1970 and 2010
+p <- gapminder %>%
+  filter(year %in% c(past_year, present_year) & country %in% country_list) %>%
+  mutate(region = reorder(region, dollars_per_day, FUN = median)) %>%
+  ggplot() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  xlab("") + scale_y_continuous(trans = "log2")
+
+p + geom_boxplot(aes(region, dollars_per_day, fill = continent)) +
+  facet_grid(year ~ .)
+
+# arrange matching boxplots next to each other, colored by year
+p + geom_boxplot(aes(region, dollars_per_day, fill = factor(year)))
+
+# Change the y-axis of density plots to variable counts using ..count.. as the y argument.
+# The case_when() function defines a factor whose levels are defined by a variety of logical operations to group data.
+# Plot stacked density plots using position="stack".
+# Define a weight aesthetic mapping to change the relative weights of density plots - for example, this allows weighting of plots by population rather than number of countries.
+# Code: Faceted smooth density plots
+# see the code below the previous video for variable definitions
+
+# smooth density plots - area under each curve adds to 1
+gapminder %>%
+  filter(year == past_year & country %in% country_list) %>%
+  mutate(group = ifelse(region %in% west, "West", "Developing")) %>% group_by(group) %>%
+  summarize(n = n()) %>% knitr::kable()
+
+# smooth density plots - variable counts on y-axis
+p <- gapminder %>%
+  filter(year == past_year & country %in% country_list) %>%
+  mutate(group = ifelse(region %in% west, "West", "Developing")) %>%
+  ggplot(aes(dollars_per_day, y = ..count.., fill = group)) +
+  scale_x_continuous(trans = "log2")
+p + geom_density(alpha = 0.2, bw = 0.75) + facet_grid(year ~ .)
+#Code: Add new region groups with case_when
+# add group as a factor, grouping regions
+gapminder <- gapminder %>%
+  mutate(group = case_when(
+    .$region %in% west ~ "West",
+    .$region %in% c("Eastern Asia", "South-Eastern Asia") ~ "East Asia",
+    .$region %in% c("Caribbean", "Central America", "South America") ~ "Latin America",
+    .$continent == "Africa" & .$region != "Northern Africa" ~ "Sub-Saharan Africa",
+    TRUE ~ "Others"))
+
+# reorder factor levels
+gapminder <- gapminder %>%
+  mutate(group = factor(group, levels = c("Others", "Latin America", "East Asia", "Sub-Saharan Africa", "West")))
+#Code: Stacked density plot
+# note you must redefine p with the new gapminder object first
+p <- gapminder %>%
+  filter(year %in% c(past_year, present_year) & country %in% country_list) %>%
+  ggplot(aes(dollars_per_day, fill = group)) +
+  scale_x_continuous(trans = "log2")
+
+# stacked density plot
+p + geom_density(alpha = 0.2, bw = 0.75, position = "stack") +
+  facet_grid(year ~ .)
+#Code: Weighted stacked density plot
+# weighted stacked density plot
+gapminder %>%
+  filter(year %in% c(past_year, present_year) & country %in% country_list) %>%
+  group_by(year) %>%
+  mutate(weight = population/sum(population*2)) %>%
+  ungroup() %>%
+  ggplot(aes(dollars_per_day, fill = group, weight = weight)) +
+  scale_x_continuous(trans = "log2") +
+  geom_density(alpha = 0.2, bw = 0.75, position = "stack") + facet_grid(year ~ .)
+
+# The breaks argument allows us to set the location of the axis labels and tick marks.
+# The logistic or logit transformation is defined as  f(p)=logp1???p , or the log of odds. This scale is useful for highlighting differences near 0 or near 1 and converts fold changes into constant increases.
+# The ecological fallacy is assuming that conclusions made from the average of a group apply to all members of that group.
+# Code
+# define gapminder
+library(tidyverse)
+library(dslabs)
+data(gapminder)
+
+# add additional cases
+gapminder <- gapminder %>%
+  mutate(group = case_when(
+    .$region %in% west ~ "The West",
+    .$region %in% "Northern Africa" ~ "Northern Africa",
+    .$region %in% c("Eastern Asia", "South-Eastern Asia") ~ "East Asia",
+    .$region == "Southern Asia" ~ "Southern Asia",
+    .$region %in% c("Central America", "South America", "Caribbean") ~ "Latin America",
+    .$continent == "Africa" & .$region != "Northern Africa" ~ "Sub-Saharan Africa",
+    .$region %in% c("Melanesia", "Micronesia", "Polynesia") ~ "Pacific Islands"))
+
+# define a data frame with group average income and average infant survival rate
+surv_income <- gapminder %>%
+  filter(year %in% present_year & !is.na(gdp) & !is.na(infant_mortality) & !is.na(group)) %>%
+  group_by(group) %>%
+  summarize(income = sum(gdp)/sum(population)/365,
+            infant_survival_rate = 1 - sum(infant_mortality/1000*population)/sum(population))
+surv_income %>% arrange(income)
+
+# plot infant survival versus income, with transformed axes
+surv_income %>% ggplot(aes(income, infant_survival_rate, label = group, color = group)) +
+  scale_x_continuous(trans = "log2", limit = c(0.25, 150)) +
+  scale_y_continuous(trans = "logit", limit = c(0.875, .9981),
+                     breaks = c(.85, .90, .95, .99, .995, .998)) +
+  geom_label(size = 3, show.legend = FALSE) 
+
+############################## data visualization principals (MOST IMPORTANT)#############################
+
+# Visual cues for encoding data include position, length, angle, area, brightness and color hue.
+# Position and length are the preferred way to display quantities, followed by angles, which are preferred over area. Brightness and color are even harder to quantify but can sometimes be useful.
+# Pie charts represent visual cues as both angles and area, while donut charts use only area. Humans are not good at visually quantifying angles and are even worse at quantifying area. Therefore pie and donut charts should be avoided - use a bar plot instead. If you must make a pie chart, include percentages as labels.
+# Bar plots represent visual cues as position and length. Humans are good at visually quantifying linear measures, making bar plots a strong alternative to pie or donut charts.
+
+# When using bar plots, always start at 0. It is deceptive not to start at 0 because bar plots imply length is proportional to the quantity displayed. Cutting off the y-axis can make differences look bigger than they actually are.
+# When using position rather than length, it is not necessary to include 0 (scatterplot, dot plot, boxplot).
+
+# Make sure your visualizations encode the correct quantities.
+# For example, if you are using a plot that relies on circle area, make sure the area (rather than the radius) is proportional to the quantity.
+
+# It is easiest to visually extract information from a plot when categories are ordered by a meaningful value. The exact value on which to order will depend on your data and the message you wish to convey with your plot.
+# The default ordering for categories is alphabetical if the categories are strings or by factor level if factors. However, we rarely want alphabetical order.
+
+# A dynamite plot - a bar graph of group averages with error bars denoting standard errors - provides almost no information about a distribution.
+# By showing the data, you provide viewers extra information about distributions.
+# Jitter is adding a small random shift to each point in order to minimize the number of overlapping points. To add jitter, use the  geom_jitter() geometry instead of geom_point(). (See example below.)
+# Alpha blending is making points somewhat transparent, helping visualize the density of overlapping points. Add an alpha argument to the geometry.
+# Code
+# dot plot showing the data
+heights %>% ggplot(aes(sex, height)) + geom_point()
+
+# jittered, alpha blended point plot
+heights %>% ggplot(aes(sex, height)) + geom_jitter(width = 0.1, alpha = 0.2)
+
+# Ease comparisons by keeping axes the same when comparing data across multiple plots.
+# Align plots vertically to see horizontal changes. Align plots horizontally to see vertical changes.
+# Bar plots are useful for showing one number but not useful for showing distributions.
+
+# Use transformations when warranted to ease visual interpretation.
+# The log transformation is useful for data with multiplicative changes. The logistic transformation is useful for fold changes in odds. The square root transformation is useful for count data.
+# We learned how to apply transformations earlier in the course.
+
+# When two groups are to be compared, it is optimal to place them adjacent in the plot.
+# Use color to encode groups to be compared.
+# Consider using a color blind friendly palette like the one in this video.
+# Code
+color_blind_friendly_cols <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+p1 <- data.frame(x = 1:8, y = 1:8, col = as.character(1:8)) %>%
+  ggplot(aes(x, y, color = col)) +
+  geom_point(size = 5)
+p1 + scale_color_manual(values = color_blind_friendly_cols)
+
+# Consider using a slope chart or Bland-Altman plot when comparing one variable at two different time points, especially for a small number of observations.
+# Slope charts use angle to encode change. Use geom_line() to create slope charts. It is useful when comparing a small number of observations.
+# The Bland-Altman plot (Tukey mean difference plot, MA plot) graphs the difference between conditions on the y-axis and the mean between conditions on the x-axis.
+# It is more appropriate for large numbers of observations than slope charts.
+#Code: Slope chart
+library(tidyverse)
+library(dslabs)
+data(gapminder)
+
+west <- c("Western Europe", "Northern Europe", "Southern Europe", "Northern America", "Australia and New Zealand")
+
+dat <- gapminder %>%
+  filter(year %in% c(2010, 2015) & region %in% west & !is.na(life_expectancy) & population > 10^7)
+
+dat %>%
+  mutate(location = ifelse(year == 2010, 1, 2),
+         location = ifelse(year == 2015 & country %in% c("United Kingdom", "Portugal"),
+                           location + 0.22, location),
+         hjust = ifelse(year == 2010, 1, 0)) %>%
+  mutate(year = as.factor(year)) %>%
+  ggplot(aes(year, life_expectancy, group = country)) +
+  geom_line(aes(color = country), show.legend = FALSE) +
+  geom_text(aes(x = location, label = country, hjust = hjust), show.legend = FALSE) +
+  xlab("") +
+  ylab("Life Expectancy") 
+
+#Code: Bland-Altman plot
+library(ggrepel)
+dat %>%
+  mutate(year = paste0("life_expectancy_", year)) %>%
+  select(country, year, life_expectancy) %>% spread(year, life_expectancy) %>%
+  mutate(average = (life_expectancy_2015 + life_expectancy_2010)/2,
+         difference = life_expectancy_2015 - life_expectancy_2010) %>%
+  ggplot(aes(average, difference, label = country)) +
+  geom_point() +
+  geom_text_repel() +
+  geom_abline(lty = 2) +
+  xlab("Average of 2010 and 2015") +
+  ylab("Difference between 2015 and 2010")
+
+# Encode a categorical third variable on a scatterplot using color hue or shape. Use the shape argument to control shape.
+# Encode a continuous third variable on a using color intensity or size.
+
+# Vaccines save millions of lives, but misinformation has led some to question the safety of vaccines. The data support vaccines as safe and effective. We visualize data about measles incidence in order to demonstrate the impact of vaccination programs on disease rate.
+# The RColorBrewer package offers several color palettes. Sequential color palettes are best suited for data that span from high to low. Diverging color palettes are best suited for data that are centered and diverge towards high or low values.
+# The geom_tile() geometry creates a grid of colored tiles.
+# Position and length are stronger cues than color for numeric values, but color can be appropriate sometimes.
+#Code: Tile plot of measles rate by year and state
+# import data and inspect
+library(tidyverse)
+library(dslabs)
+data(us_contagious_diseases)
+str(us_contagious_diseases)
+
+# assign dat to the per 10,000 rate of measles, removing Alaska and Hawaii and adjusting for weeks reporting
+the_disease <- "Measles"
+dat <- us_contagious_diseases %>%
+  filter(!state %in% c("Hawaii", "Alaska") & disease == the_disease) %>%
+  mutate(rate = count / population * 10000 * 52/weeks_reporting) %>%
+  mutate(state = reorder(state, rate))
+
+# plot disease rates per year in California
+dat %>% filter(state == "California" & !is.na(rate)) %>%
+  ggplot(aes(year, rate)) +
+  geom_line() +
+  ylab("Cases per 10,000") +
+  geom_vline(xintercept=1963, col = "blue")
+
+# tile plot of disease rate by state and year
+dat %>% ggplot(aes(year, state, fill=rate)) +
+  geom_tile(color = "grey50") +
+  scale_x_continuous(expand = c(0,0)) +
+  scale_fill_gradientn(colors = RColorBrewer::brewer.pal(9, "Reds"), trans = "sqrt") +
+  geom_vline(xintercept = 1963, col = "blue") +
+  theme_minimal() + theme(panel.grid = element_blank()) +
+  ggtitle(the_disease) +
+  ylab("") +
+  xlab("")
+
+#Code: Line plot of measles rate by year and state
+# compute US average measles rate by year
+avg <- us_contagious_diseases %>%
+  filter(disease == the_disease) %>% group_by(year) %>%
+  summarize(us_rate = sum(count, na.rm = TRUE)/sum(population, na.rm = TRUE)*10000)
+
+# make line plot of measles rate by year by state
+dat %>%
+  filter(!is.na(rate)) %>%
+  ggplot() +
+  geom_line(aes(year, rate, group = state), color = "grey50", 
+            show.legend = FALSE, alpha = 0.2, size = 1) +
+  geom_line(mapping = aes(year, us_rate), data = avg, size = 1, col = "black") +
+  scale_y_continuous(trans = "sqrt", breaks = c(5, 25, 125, 300)) +
+  ggtitle("Cases per 10,000 by state") +
+  xlab("") +
+  ylab("") +
+  geom_text(data = data.frame(x = 1955, y = 50),
+            mapping = aes(x, y, label = "US average"), color = "black") +
+  geom_vline(xintercept = 1963, col = "blue")
+
+#In general, pseudo-3D plots and gratuitous 3D plots only add confusion. Use regular 2D plots instead.
+# In tables, avoid using too many significant digits. Too many digits can distract from the meaning of your data.
+# Reduce the number of significant digits globally by setting an option. For example, options(digits = 3) will cause all future computations that session to have 3 significant digits.
+# Reduce the number of digits locally using round() or signif().
+
+
